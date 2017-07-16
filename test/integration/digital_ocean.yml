@@ -1,0 +1,6 @@
+- hosts: digital_ocean
+  gather_facts: no
+  tags:
+    - test_digital_ocean
+  roles:
+    - { role: digital_ocean, tags: test_digital_ocean }
