@@ -2,5 +2,6 @@
   gather_facts: no
   tags:
     - test_digital_ocean
-  roles:
-    - { role: digital_ocean, tags: test_digital_ocean }
+  tasks:
+    - name: sshkey module tests
+      include: tasks/sshkey.yml
