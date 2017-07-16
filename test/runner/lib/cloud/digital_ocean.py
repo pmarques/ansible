@@ -1,4 +1,4 @@
-"""AWS plugin for integration tests."""
+"""DigitalOcean plugin for integration tests."""
 from __future__ import absolute_import, print_function
 
 import os
@@ -20,7 +20,7 @@ from lib.core_ci import (
 
 
 class AwsCloudProvider(CloudProvider):
-    """AWS cloud provider plugin. Sets up cloud resources before delegation."""
+    """DigitalOcean cloud provider plugin. Sets up cloud resources before delegation."""
     def filter(self, targets, exclude):
         """Filter out the cloud tests when the necessary config and resources are not available.
         :type targets: tuple[TestTarget]
@@ -108,4 +108,4 @@ class AwsCloudEnvironment(CloudEnvironment):
         """
         :rtype: str | None
         """
-        return 'amazon'
+        return 'digital_ocean'
