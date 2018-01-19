@@ -553,6 +553,15 @@ class AzureInventory(object):
                     self._load_machines(selected_machines)
                 else:
                     self._load_machines(virtual_machines)
+                try:
+                    load_balancers = self._network_client.load_balancers.list(resource_group)
+                except Exception as exc:
+                    sys.exit("Error: fetching load balancers for resource group {0} - {1}".format(resource_group, str(exc)))
+                if self._args.host or self.tags:
+                    # selected_load_balancers = self._selected_load_balancers(load_balancers)
+                    self._load_load_balancers(selected_load_balancers)
+                else:
+                    self._load_load_balancers(load_balancers)
         else:
             # get all VMs within the subscription
             try:
@@ -565,6 +574,15 @@ class AzureInventory(object):
                 self._load_machines(selected_machines)
             else:
                 self._load_machines(virtual_machines)
+            try:
+                load_balancers = self._network_client.load_balancers.list_all()
+            except Exception as exc:
+                sys.exit("Error: fetching load balancers for resource group {0} - {1}".format(resource_group, str(exc)))
+            if self._args.host or self.tags:
+                # selected_load_balancers = self._selected_load_balancers(load_balancers)
+                self._load_load_balancers(selected_load_balancers)
+            else:
+                self._load_load_balancers(load_balancers)
 
     def _load_machines(self, machines):
         for machine in machines:
@@ -665,6 +683,45 @@ class AzureInventory(object):
                                 host_vars['fqdn'] = public_ip_address.dns_settings.fqdn
 
             self._add_host(host_vars)
+
+    def _load_load_balancers(self, load_balancers):
+        # import pprint
+        # pp = pprint.PrettyPrinter(indent=4)
+
+        for lb in load_balancers:
+            id_dict = azure_id_to_dict(lb.id)
+
+            # TODO - The API is returning an ID value containing resource group name in ALL CAPS. If/when it gets
+            #       fixed, we should remove the .lower(). Opened Issue
+            #       #574: https://github.com/Azure/azure-sdk-for-python/issues/574
+            resource_group = id_dict['resourceGroups'].lower()
+
+            host_vars = dict(
+                ansible_host=None,
+                ansible_user=None,
+                ansible_=None,
+                private_ip=None,
+                public_ip=None,
+                public_ip_alloc_method=None,
+                location=lb.location,
+                name=lb.name,
+                type=lb.type,
+                id=lb.id,
+                tags=lb.tags,
+                resource_group=resource_group,
+            )
+
+            # ip REF: http://azure-sdk-for-python.readthedocs.io/en/latest/ref/azure.mgmt.network.v2017_03_01.models.html#azure.mgmt.network.v2017_03_01.models.FrontendIPConfiguration
+            for ip_conf in lb.frontend_ip_configurations:
+                if ip_conf.private_ip_address:
+                    host_vars['private_ip'] = ip_conf.private_ip_address
+                if ip_conf.public_ip_address:
+                    host_vars['public_ip'] = ip_conf.public_ip_address
+                if ip_conf.private_ip_allocation_method:
+                    host_vars['public_ip_alloc_method'] = ip_conf.private_ip_allocation_method
+
+            # We jsut need hostvars
+            self._inventory['_meta']['hostvars'][host_vars["name"]] = host_vars
 
     def _selected_machines(self, virtual_machines):
         selected_machines = []
